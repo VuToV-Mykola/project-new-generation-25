@@ -159,10 +159,14 @@ jobs:
           RELEASES_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             "https://api.github.com/repos/$OWNER/$REPO/releases")
 
+          # ✅ FIX: Безпечна обробка releases з перевіркою типу
           TOTAL_DOWNLOADS=0
-          if echo "$RELEASES_RESPONSE" | jq -e '. | length > 0' >/dev/null 2>&1; then
-            TOTAL_DOWNLOADS=$(echo "$RELEASES_RESPONSE" | jq '[.[].assets[].download_count] | add // 0')
+          if echo "$RELEASES_RESPONSE" | jq -e 'type == "array" and length > 0' >/dev/null 2>&1; then
+            TOTAL_DOWNLOADS=$(echo "$RELEASES_RESPONSE" | jq '[.[] | select(.assets != null) | .assets[] | select(.download_count != null) | .download_count] | add // 0' 2>/dev/null || echo "0")
+            echo "📦 Total downloads: $TOTAL_DOWNLOADS"
             echo '{"schemaVersion": 1, "label": "⬇️ downloads", "message": "'$TOTAL_DOWNLOADS'", "color": "orange", "style": "'$BADGE_STYLE'"}' > "$DATA_DIR/downloads-badge.json"
+          else
+            echo "📦 No releases found or API error"
           fi
 
           # === ТЕХНОЛОГІЧНІ БЕЙДЖІ ===
@@ -173,19 +177,25 @@ jobs:
           LANGUAGES_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             "https://api.github.com/repos/$OWNER/$REPO/languages")
 
-          if echo "$LANGUAGES_RESPONSE" | jq -e . >/dev/null 2>&1; then
-            TOP_LANGUAGES=$(echo "$LANGUAGES_RESPONSE" | jq -r 'to_entries | sort_by(.value) | reverse | .[0:3] | .[].key')
+          # ✅ FIX: Безпечна обробка languages з перевіркою типу
+          if echo "$LANGUAGES_RESPONSE" | jq -e 'type == "object" and length > 0' >/dev/null 2>&1; then
+            TOP_LANGUAGES=$(echo "$LANGUAGES_RESPONSE" | jq -r 'to_entries | sort_by(.value) | reverse | .[0:3] | .[].key' 2>/dev/null || echo "")
             
-            for lang in $TOP_LANGUAGES; do
-              case $lang in
-                "HTML") TECH_BADGES="$TECH_BADGES[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML) " ;;
-                "CSS") TECH_BADGES="$TECH_BADGES[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS) " ;;
-                "JavaScript") TECH_BADGES="$TECH_BADGES[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) " ;;
-                "TypeScript") TECH_BADGES="$TECH_BADGES[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/) " ;;
-                "Python") TECH_BADGES="$TECH_BADGES[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/) " ;;
-                "Java") TECH_BADGES="$TECH_BADGES[![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)](https://www.java.com/) " ;;
-              esac
-            done
+            if [ -n "$TOP_LANGUAGES" ]; then
+              for lang in $TOP_LANGUAGES; do
+                case $lang in
+                  "HTML") TECH_BADGES="$TECH_BADGES[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML) " ;;
+                  "CSS") TECH_BADGES="$TECH_BADGES[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS) " ;;
+                  "JavaScript") TECH_BADGES="$TECH_BADGES[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript) " ;;
+                  "TypeScript") TECH_BADGES="$TECH_BADGES[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/) " ;;
+                  "Python") TECH_BADGES="$TECH_BADGES[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/) " ;;
+                  "Java") TECH_BADGES="$TECH_BADGES[![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)](https://www.java.com/) " ;;
+                esac
+              done
+              echo "🔧 Found languages: $TOP_LANGUAGES"
+            fi
+          else
+            echo "🔧 No languages found or API error"
           fi
 
           # Додаємо інструменти
