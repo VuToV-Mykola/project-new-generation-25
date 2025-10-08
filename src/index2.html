@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- Українською: Декларація типу документу HTML5 / English: HTML5 document type declaration -->
+<html lang="uk">
+  <!-- Українською: Вказує мову сторінки / English: Specifies page language -->
+  <!--!!! HEAD !!!-->
+  <head>
+    <meta charset="UTF-8">
+    <!-- Українською: Кодування символів (UTF-8 підтримує всі мови) / English: Character encoding (UTF-8 supports all languages) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Українською: Налаштування адаптивного дизайну / English: Responsive design settings -->
+
+    <meta name="description" content="Page description">
+    <!-- Українською: Опис сторінки для SEO / English: Page description for SEO -->
+    <!--!!! MODERN NORMALIZE !!!-->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/3.0.1/modern-normalize.css"
+      integrity="sha512-gnAN+RgTMylunXI7AMg+PtcUGpKZFkZJoFIkAWvdPFRrFJz3p2tx4+9xbjILRfN7CzoViMgS8vSf06fSQzWZjA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer">
+    <!--!!! FONTS !!!-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
+    <!--!!! STYLES !!!-->
+    <link rel="stylesheet" href="./css/styles.css">
+    <!-- Українською: Підключення CSS стилів / English: CSS stylesheet link -->
+    <!--!!! TITLE !!!-->
+    <title>EcoTote-стиль,що не шкодить планеті</title>
+    <!-- Українською: Заголовок сторінки (вкладка браузера) / English: Page title (browser tab) -->
+  </head>
+  <!--!!! BODY !!!-->
+  <body class="page">
+    <header class="page-header">
+      <!-- Українською: Верхня частина сторінки (лого, навігація) / English: Top section (logo, navigation) -->
+      <load src="/partials/header.html" icon-path="img/sprite.svg#logo"></load>
+    </header>
+    <!--!!! MAIN !!!-->
+    <main class="page-main">
+      <!-- Українською: Основний вміст сторінки / English: Main page content -->
+      <!-- Loads the specified .html file -->
+      <!--!!! hero !!!-->
+      <load src="/partials/hero.html"></load>
+      <!--!!! feature !!!-->
+      <load src="/partials/feature.html"></load>
+      <!--!!! advantages !!!-->
+      <load src="/partials/advantages.html"></load>
+      <!--!!! product !!!-->
+      <load src="/partials/product.html"></load>
+      <!--!!! gallery !!!-->
+      <load src="/partials/gallery.html"></load>
+      <!--!!! testimonial !!!-->
+      <load src="/partials/testimonial.html"></load>
+      <!--!!! contact !!!-->
+      <load src="/partials/contact.html"></load>
+    </main>
+    <!--!!! footer !!!-->
+    <footer class="page-footer">
+      <!-- Українською: Нижня частина сторінки (копірайт, посилання) / English: Bottom section (copyright, links) -->
+      <load src="/partials/footer.html"></load>
+    </footer>
+    <!--!!! SCRIPT !!!-->
+    <script type="module" src="./main.js"></script>
+    <!-- Українською: Підключення JavaScript з відкладеним виконанням / English: JavaScript with deferred execution -->
+  </body>
+</html>
