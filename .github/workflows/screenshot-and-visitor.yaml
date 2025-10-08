@@ -4,11 +4,11 @@ on:
   push:
     branches: [main, master]
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: "0 */2 * * *"
   workflow_dispatch:
     inputs:
       add_like:
-        description: 'Add your like (only one per user allowed)'
+        description: "Add your like (only one per user allowed)"
         required: false
         default: true
         type: boolean
@@ -19,18 +19,18 @@ permissions:
   actions: read
 
 env:
-  BADGE_STYLE: 'for-the-badge'
-  BADGE_COLOR: 'brightgreen'
-  LIKES_COLOR: 'gold'
-  DATA_DIR: 'assets/db'
-  SCREENSHOT_DIR: 'assets'
+  BADGE_STYLE: "for-the-badge"
+  BADGE_COLOR: "brightgreen"
+  LIKES_COLOR: "gold"
+  DATA_DIR: "assets/db"
+  SCREENSHOT_DIR: "assets"
 
 jobs:
   update-readme-and-visitor:
     runs-on: ubuntu-latest
     env:
-      NODE_VERSION: '20.x'
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'false'
+      NODE_VERSION: "20.x"
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"
 
     steps:
       - name: 🔥 Checkout repository
@@ -93,36 +93,47 @@ jobs:
           STARS_RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             "https://api.github.com/repos/$OWNER/$REPO/stargazers")
 
-          if echo "$STARS_RESPONSE" | jq -e . >/dev/null 2>&1; then
-            STARS_USERS=$(echo "$STARS_RESPONSE" | jq -r '.[].login' | jq -R -s 'split("\n") | map(select(length > 0))')
+          # ✅ FIX: Перевірка, чи відповідь є валідним JSON масивом
+          if echo "$STARS_RESPONSE" | jq -e 'type == "array"' >/dev/null 2>&1 && [ "$(echo "$STARS_RESPONSE" | jq 'length')" -gt 0 ]; then
+            STARS_USERS=$(echo "$STARS_RESPONSE" | jq -r '[.[].login] | unique')
             STARS_COUNT=$(echo "$STARS_USERS" | jq 'length')
             STARGAZERS_DETAILED=$(echo "$STARS_RESPONSE" | jq '[.[] | {login: .login, avatar_url: .avatar_url, html_url: .html_url, starred_at: now | strftime("%Y-%m-%d %H:%M:%S")}]')
+            echo "⭐ Found $STARS_COUNT stargazers"
           else
+            echo "⭐ No stargazers found or API error"
             STARS_USERS='[]'
             STARS_COUNT=0
             STARGAZERS_DETAILED='[]'
           fi
 
-          [ ! -f "$STATS_FILE" ] && echo '{"manual_likes": {"users": []}}' > "$STATS_FILE"
+          # ✅ FIX: Ініціалізація stats файлу з правильною структурою
+          [ ! -f "$STATS_FILE" ] && echo '{"manual_likes": {"users": [], "details": []}}' > "$STATS_FILE"
 
           # Manual likes processing
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.add_like }}" = "true" ]; then
             USER="${{ github.actor }}"
-            IS_STARGAZER=$(echo "$STARS_USERS" | jq --arg user "$USER" 'index($user) != null')
+            # ✅ FIX: Безпечна перевірка з обробкою помилок
+            IS_STARGAZER=$(echo "$STARS_USERS" | jq --arg user "$USER" 'if type == "array" then (index($user) != null) else false end' 2>/dev/null || echo "false")
             
             if [ "$IS_STARGAZER" = "false" ]; then
-              ALREADY_LIKED=$(jq --arg user "$USER" '.manual_likes.users | index($user) != null' "$STATS_FILE")
+              # ✅ FIX: Безпечна перевірка з обробкою помилок
+              ALREADY_LIKED=$(jq --arg user "$USER" 'if .manual_likes.users then (.manual_likes.users | index($user) != null) else false end' "$STATS_FILE" 2>/dev/null || echo "false")
               if [ "$ALREADY_LIKED" = "false" ]; then
                 CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S")
                 jq --arg user "$USER" --arg time "$CURRENT_TIME" \
                   '.manual_likes.users += [$user] | .manual_likes.details += [{login: $user, liked_at: $time, type: "manual"}]' \
                   "$STATS_FILE" > tmp.json && mv tmp.json "$STATS_FILE"
                 echo "💖 New manual like from $USER!"
+              else
+                echo "💖 User $USER already liked"
               fi
+            else
+              echo "⭐ User $USER is already a stargazer"
             fi
           fi
 
-          MANUAL_LIKES_COUNT=$(jq -r '.manual_likes.users | length' "$STATS_FILE")
+          # ✅ FIX: Безпечне отримання кількості з обробкою помилок
+          MANUAL_LIKES_COUNT=$(jq -r 'if .manual_likes.users then (.manual_likes.users | length) else 0 end' "$STATS_FILE" 2>/dev/null || echo "0")
           TOTAL_LIKES=$((STARS_COUNT + MANUAL_LIKES_COUNT))
 
           # Create badges
@@ -189,11 +200,17 @@ jobs:
           echo "💾 Saving detailed user information..."
           echo "{\"count\": $STARS_COUNT, \"users\": $STARGAZERS_DETAILED, \"updated_at\": \"$(date -u +\"%Y-%m-%d %H:%M:%S\")\"}" > "$STARGAZERS_FILE"
 
-          MANUAL_LIKES_DETAILED=$(jq -r '.manual_likes.details // []' "$STATS_FILE")
+          # ✅ FIX: Безпечне отримання даних з обробкою помилок
+          MANUAL_LIKES_DETAILED=$(jq -r 'if .manual_likes.details then .manual_likes.details else [] end' "$STATS_FILE" 2>/dev/null || echo "[]")
           echo "{\"count\": $MANUAL_LIKES_COUNT, \"users\": $MANUAL_LIKES_DETAILED, \"updated_at\": \"$(date -u +\"%Y-%m-%d %H:%M:%S\")\"}" > "$MANUAL_LIKES_FILE"
 
-          ALL_UNIQUE_USERS=$(echo "$STARS_USERS" | jq --argjson manual "$(jq -r '.manual_likes.users // []' "$STATS_FILE")" '. + $manual | unique')
-          TOTAL_UNIQUE_USERS=$(echo "$ALL_UNIQUE_USERS" | jq 'length')
+          # ✅ FIX: Безпечне об'єднання масивів з обробкою помилок
+          MANUAL_USERS=$(jq -r 'if .manual_likes.users then .manual_likes.users else [] end' "$STATS_FILE" 2>/dev/null || echo "[]")
+          ALL_UNIQUE_USERS=$(echo "$STARS_USERS" | jq --argjson manual "$MANUAL_USERS" 'if type == "array" then (. + $manual | unique) else $manual end' 2>/dev/null || echo "[]")
+          TOTAL_UNIQUE_USERS=$(echo "$ALL_UNIQUE_USERS" | jq 'length' 2>/dev/null || echo "0")
+
+          # ✅ FIX: Безпечне створення фінального JSON з обробкою помилок
+          MANUAL_USERS_JSON=$(jq -r 'if .manual_likes.users then .manual_likes.users else [] end' "$STATS_FILE" 2>/dev/null || echo "[]")
 
           echo "{
             \"total_unique_users\": $TOTAL_UNIQUE_USERS,
@@ -204,7 +221,7 @@ jobs:
             },
             \"manual_likes\": {
               \"count\": $MANUAL_LIKES_COUNT,
-              \"users\": $(jq -r '.manual_likes.users // []' "$STATS_FILE")
+              \"users\": $MANUAL_USERS_JSON
             },
             \"all_engaged_users\": $ALL_UNIQUE_USERS,
             \"updated_at\": \"$(date -u +"%Y-%m-%d %H:%M:%S")\"
