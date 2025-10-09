@@ -4,7 +4,7 @@ on:
   push:
     branches: [gh-pages, main]
   schedule:
-    - cron: "0 */2 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       add_like:
@@ -40,6 +40,13 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           persist-credentials: true
           fetch-depth: 0
+
+      - name: 🚫 Skip if auto-commit
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"Auto-update:"* ]]; then
+            echo "⏭️ Skipping workflow for auto-commit"
+            exit 78
+          fi
 
       - name: 🔍 Check if screenshot is commented in README
         run: |
