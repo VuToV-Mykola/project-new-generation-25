@@ -41,14 +41,19 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: 🚫 Skip if auto-commit
+      - name: 🚫 Check if auto-commit
+        id: check_commit
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"Auto-update:"* ]]; then
-            echo "⏭️ Skipping workflow for auto-commit"
-            exit 78
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ Auto-commit detected - will skip workflow"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "✅ Regular commit - proceeding with workflow"
           fi
 
       - name: 🔍 Check if screenshot is commented in README
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           if grep -q "^[[:space:]]*<!--.*📸 Скріншот проекту" README.md || grep -q "^[[:space:]]*<!--.*📸 Latest Screenshot" README.md; then
             echo "📸 Screenshot section is commented out - skipping screenshot generation"
@@ -59,6 +64,7 @@ jobs:
           fi
 
       - name: 🚀 Initialize workflow
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           DATA_DIR="$DATA_DIR"
           SCREENSHOT_DIR="$SCREENSHOT_DIR"
@@ -79,6 +85,7 @@ jobs:
           echo "🚀 Workflow initialized, README cleared"
 
       - name: 📊 Collect all statistics
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           DATA_DIR="$DATA_DIR"
           STATS_FILE="$DATA_DIR/stats-data.json"
@@ -250,6 +257,7 @@ jobs:
           echo "👥 Total unique engaged users: $TOTAL_UNIQUE_USERS"
 
       - name: 🖥 Setup Node.js and dependencies
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           if [ "$SCREENSHOT_SKIP" = "true" ]; then
             echo "⏭️ Skipping Node.js setup - screenshot generation disabled"
@@ -284,6 +292,7 @@ jobs:
           fi
 
       - name: 📸 Generate screenshot from GitHub Pages
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           if [ "$SCREENSHOT_DEPENDENCIES_AVAILABLE" = "false" ]; then
             echo "❌ Screenshot dependencies not available - skipping screenshot"
@@ -481,6 +490,7 @@ jobs:
           rm -f screenshot_output.log
 
       - name: 📝 Update README with all content
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           REPO_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}"
           TECH_BADGES=$(cat $DATA_DIR/tech-badges.txt 2>/dev/null || echo "")
@@ -523,6 +533,7 @@ jobs:
           echo "✅ README updated with all content"
 
       - name: 📤 Commit and deploy
+        if: steps.check_commit.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
