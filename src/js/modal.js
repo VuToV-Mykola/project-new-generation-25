@@ -3,14 +3,23 @@
   const openMenuBtn = document.querySelector(".js-open-menu")
   const closeMenuBtn = document.querySelector(".js-close-menu")
 
+  // ✅ FIX: Перевірка наявності елементів перед ініціалізацією
+  if (!mobileMenu || !openMenuBtn || !closeMenuBtn) {
+    console.warn("Mobile menu elements not found. Skipping mobile menu initialization.")
+    return
+  }
+
   const toggleMenu = () => {
     const anchors = mobileMenu.querySelectorAll('a[href*="#"]')
     const isMenuOpen = openMenuBtn.getAttribute("aria-expanded") === "true" || false
     openMenuBtn.setAttribute("aria-expanded", !isMenuOpen)
     mobileMenu.classList.toggle("is-open")
 
-    const scrollLockMethod = !isMenuOpen ? "disableBodyScroll" : "enableBodyScroll"
-    bodyScrollLock[scrollLockMethod](document.body)
+    // ✅ FIX: Перевірка наявності bodyScrollLock перед використанням
+    if (typeof bodyScrollLock !== "undefined") {
+      const scrollLockMethod = !isMenuOpen ? "disableBodyScroll" : "enableBodyScroll"
+      bodyScrollLock[scrollLockMethod](document.body)
+    }
 
     if (anchors.length === 0) return
 
@@ -29,11 +38,15 @@
   openMenuBtn.addEventListener("click", toggleMenu)
   closeMenuBtn.addEventListener("click", toggleMenu)
 
-  // Вказати брейкпоінт після якого повинна зачинятися
+  // ✅ Вказати брейкпоінт після якого повинна зачинятися
   window.matchMedia("(min-width: 375px)").addEventListener("change", e => {
     if (!e.matches) return
     mobileMenu.classList.remove("is-open")
     openMenuBtn.setAttribute("aria-expanded", false)
-    bodyScrollLock.enableBodyScroll(document.body)
+
+    // ✅ FIX: Перевірка наявності bodyScrollLock
+    if (typeof bodyScrollLock !== "undefined") {
+      bodyScrollLock.enableBodyScroll(document.body)
+    }
   })
 })()

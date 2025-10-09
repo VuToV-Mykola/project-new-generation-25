@@ -1,5 +1,4 @@
 {
-  "plugins": ["@awmottaz/prettier-plugin-void-html"],
   "bracketSameLine": true,
   "htmlWhitespaceSensitivity": "strict",
   "vueIndentScriptAndStyle": false,
