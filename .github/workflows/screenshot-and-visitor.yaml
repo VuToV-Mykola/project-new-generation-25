@@ -2,7 +2,7 @@ name: screenshot-and-visitor
 
 on:
   push:
-    branches: [main, master]
+    branches: gh-pages
   schedule:
     - cron: "0 */2 * * *"
   workflow_dispatch:
