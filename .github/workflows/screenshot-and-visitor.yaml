@@ -36,6 +36,8 @@ jobs:
       - name: 🔥 Checkout repository
         uses: actions/checkout@v4
         with:
+          # ✅ FIX: Використовуємо PAT_TOKEN для обходу protected branch
+          token: ${{ secrets.PAT_TOKEN }}
           persist-credentials: true
           fetch-depth: 0
 
@@ -534,8 +536,8 @@ jobs:
 
           # Синхронізація з віддаленим репозиторієм перед пушем
           git pull --rebase origin ${{ github.ref_name }} || true
-          # ✅ FIX: Використовуємо PAT_TOKEN для обходу protected branch
-          git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git
+          # ✅ FIX: Push використовує PAT_TOKEN з checkout, тому просто push
+          git push origin ${{ github.ref_name }}
 
           echo "📄 Triggering updates..."
           if curl -s -f -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
